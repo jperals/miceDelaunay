@@ -1,16 +1,21 @@
+import oscP5.*;
+import netP5.*;
+
 import megamu.mesh.*;
+
+OscP5 oscP5;
+NetAddress theOther;
 
 Delaunay myDelaunay;
 ArrayList<float[]> points;
 
 void setup() {
   size(640, 480);
+
+  oscP5 = new OscP5(this, MY_PORT);
+  theOther = new NetAddress(OTHER_IP, OTHER_PORT);
+
   points = new ArrayList<float[]>();
-  /*points.add(new float[]{0, 0});
-  points.add(new float[]{width - 1, 0});
-  points.add(new float[]{width - 1, height - 1});
-  points.add(new float[]{0, height - 1});*/
-  //points.add(new float[]{width/2 - 1, height/2 - 1});
   float[][] pointsArray = pointsArrayListToPointsArray(points);
   myDelaunay = new Delaunay( pointsArray );
   stroke(255,0,0);
@@ -28,12 +33,27 @@ void draw() {
 }
 
 void mousePressed() {
-  println("hello");
-  float[] newPoint = new float[]{mouseX, mouseY};
+  OscMessage msg = new OscMessage("/mousePosition");
+  msg.add(mouseX);
+  msg.add(mouseY);
+  oscP5.send(msg, theOther);
+  addPointToDelaunay(myDelaunay, mouseX, mouseY);
+}
+
+void oscEvent(OscMessage msg) {
+  if (msg.checkAddrPattern("/mousePosition")) {
+    int x = msg.get(0).intValue();  
+    int y = msg.get(1).intValue();
+    addPointToDelaunay(myDelaunay, float(x), float(y));
+  }
+}
+
+void addPointToDelaunay(Delaunay delaunay, float x, float y) {
+  float[] newPoint = new float[]{x, y};
   points.add(newPoint);
   float[][] pointsArray = pointsArrayListToPointsArray(points);
   println(pointsArray.toString());
-  myDelaunay = new Delaunay( pointsArray );  
+  myDelaunay = new Delaunay( pointsArray );
 }
 
 float[][] pointsArrayListToPointsArray(ArrayList<float[]> pointsList) {
